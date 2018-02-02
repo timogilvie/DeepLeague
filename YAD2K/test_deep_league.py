@@ -6,6 +6,8 @@ import imghdr
 import os
 from subprocess import call
 import random
+import logging
+import sys
 
 import numpy as np
 from keras import backend as K
@@ -63,6 +65,12 @@ parser.add_argument(
     type=str,
     help='to help avoid bad predictions, tell DeepLeague the 10 champions in the game of the VOD you are passing',
     default= "")
+
+parser.add_argument(
+    '-log',
+    '--log_path',
+    type=str,
+    help='path to logger filename. Default=stdout')
 
 subparsers = parser.add_subparsers(dest='subcommand')
 
@@ -143,9 +151,29 @@ if args.subcommand == 'youtube':
     start_time = os.path.expanduser(args.start_time)
     end_time = os.path.expanduser(args.end_time)
 
+# Using logging framework for champ position messages
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(levelname)s,%(message)s')
+terminal = logging.StreamHandler(sys.stdout)
+terminal.setFormatter(formatter)
+if args.log_path is not None:
+    # If a log file is specified, send DEBUG messages to file and INFO to stdout
+    logfile = logging.FileHandler(filename=os.path.expanduser(args.log_path))
+    logfile.setFormatter(formatter)
+    logfile.setLevel(logging.DEBUG)
+    terminal.setLevel(logging.INFO)
+    logger.addHandler(logfile)
+    # Write header row
+    logger.debug('Type,Frame filename,Champion,Confidence,X Coordinate,Y Coordinate')
+else:
+    # Otherwise, send it all to stdout
+    terminal.setLevel(logging.DEBUG)
+    logger.addHandler(terminal)
+
 
 if not os.path.exists(output_path):
-    print('Creating output path {}'.format(output_path))
+    logger.info('Creating output path {}'.format(output_path))
     os.mkdir(output_path)
 
 sess = K.get_session()  # TODO: Remove dependence on Tensorflow session.
@@ -172,7 +200,7 @@ assert model_output_channels == num_anchors * (num_classes + 5), \
     'Mismatch between model and given anchor and class sizes. ' \
     'Specify matching anchors and classes with --anchors_path and ' \
     '--classes_path flags.'
-print('{} model, anchors, and classes loaded.'.format(model_path))
+logger.info('{} model, anchors, and classes loaded.'.format(model_path))
 
 # Check if model is fully convolutional, assuming channel last order.
 model_image_size = yolo_model.layers[0].input_shape[1:3]
@@ -211,7 +239,7 @@ def test_yolo(image, image_file_name):
                           image.height - (image.height % 32))
         resized_image = image.resize(new_image_size, Image.BICUBIC)
         image_data = np.array(resized_image, dtype='float32')
-        print(image_data.shape)
+        logger.info(image_data.shape)
 
     image_data /= 255.
     image_data = np.expand_dims(image_data, 0)  # Add batch dimension.
@@ -224,7 +252,7 @@ def test_yolo(image, image_file_name):
             K.learning_phase(): 0
         })
 
-    print('Found {} boxes for {}'.format(len(out_boxes), image_file_name))
+    logger.info('Found {} boxes for {}'.format(len(out_boxes), image_file_name))
 
     font = ImageFont.truetype(
         font='font/FiraMono-Medium.otf',
@@ -249,7 +277,10 @@ def test_yolo(image, image_file_name):
         left = max(0, np.floor(left + 0.5).astype('int32'))
         bottom = min(image.size[1], np.floor(bottom + 0.5).astype('int32'))
         right = min(image.size[0], np.floor(right + 0.5).astype('int32'))
-        print(label, (left, top), (right, bottom))
+
+        x_coord = int((left + right) / 2)
+        y_coord = int((top + bottom) / 2)
+        logger.debug("{},{},{},{}".format(image_file_name, label, x_coord, y_coord))
 
         if top - label_size[1] >= 0:
             text_origin = np.array([left, top - label_size[1]])
@@ -271,8 +302,8 @@ def test_yolo(image, image_file_name):
 
 def process_mp4(test_mp4_vod_path):
     video = cv2.VideoCapture(test_mp4_vod_path)
-    print("Opened ", test_mp4_vod_path)
-    print("Processing MP4 frame by frame")
+    logger.info("Opened {}".format(test_mp4_vod_path))
+    logger.info("Processing MP4 frame by frame")
 
     # forward over to the frames you want to start reading from.
     # manually set this, fps * time in seconds you wanna start from
@@ -283,14 +314,14 @@ def process_mp4(test_mp4_vod_path):
     success = True
     fps = int(video.get(cv2.CAP_PROP_FPS))
     total_frame_count = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
-    print("Loading video %d seconds long with FPS %d and total frame count %d " % (total_frame_count/fps, fps, total_frame_count))
+    logger.info("Loading video %d seconds long with FPS %d and total frame count %d " % (total_frame_count/fps, fps, total_frame_count))
 
     while success:
         success, frame = video.read()
         if not success:
             break
         if count % 1000 == 0:
-            print("Currently at frame ", count)
+            logger.info("Currently at frame {}".format(count))
 
         # i save once every fps, which comes out to 1 frames per second.
         # i think anymore than 2 FPS leads to to much repeat data.
@@ -335,10 +366,10 @@ def _main():
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
             ydl.download([test_youtube_link])
         # TODO test this on other systems.
-        print("Calling ffmpeg to cut up video")
+        logger.info("Calling ffmpeg to cut up video")
         call(['ffmpeg', '-i', youtube_download_path + '/vod_full.mp4', '-ss', start_time, '-to', end_time, '-c', 'copy', youtube_download_path + '/vod.mp4'])
         os.remove(youtube_download_path + '/vod_full.mp4')
-        print("Done with ffmpeg")
+        logger.info("Done with ffmpeg")
         process_mp4(youtube_download_path + '/vod.mp4')
 
     sess.close()
