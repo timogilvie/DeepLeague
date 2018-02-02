@@ -164,6 +164,7 @@ if args.log_path is not None:
     logfile.setLevel(logging.DEBUG)
     terminal.setLevel(logging.INFO)
     logger.addHandler(logfile)
+    logger.addHandler(terminal)
     # Write header row
     logger.debug('Type,Frame filename,Champion,Confidence,X Coordinate,Y Coordinate')
 else:
