@@ -10,6 +10,7 @@ import numpy as np
 import os
 import re
 import time
+from paths import LOCAL_BASE_PATH
 
 parser = argparse.ArgumentParser(description='Visualize npz cluster ground truth data (or game_data object)')
 parser.add_argument('--path', type=str, default='data_training_set_cluster_0.npz', help='path to npz cluster to visualize')
@@ -172,7 +173,7 @@ def visualize_frames_on_drive(images_path, refresh_rate):
     for image_file in images:
         print(image_file)
         im = cv2.imread(images_path + image_file)
-        im2 = cv2.imread("/Users/flynn/Documents/DeepLeague/YAD2K/frames_no_labels/" + image_file)
+        im2 = cv2.imread(LOCAL_BASE_PATH+"YAD2K/frames_no_labels/" + image_file)
         cv2.imshow("IMAGE", im)
         cv2.imshow("IMAGE2", im2)
         if cv2.waitKey(refresh_rate)  ==  ord('q'):

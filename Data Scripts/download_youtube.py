@@ -6,7 +6,8 @@ import sys
 import csv
 
 # tuples of file_name, youtube_link, game_start_time, game_end_time
-CSV_FILE_PATH = '/Users/flynn/Documents/DeepLeague/data/vod_info.csv'
+from paths import LOCAL_BASE_PATH
+CSV_FILE_PATH = LOCAL_BASE_PATH + 'data/vod_info.csv'
 
 
 with open(CSV_FILE_PATH, 'rt') as csvfile:

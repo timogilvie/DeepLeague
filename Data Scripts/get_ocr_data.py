@@ -22,8 +22,10 @@ ENDPOINT_URL = 'https://vision.googleapis.com/v1/images:annotate'
 RESULTS_DIR = 'jsons'
 makedirs(RESULTS_DIR, exist_ok=True)
 
-
-API_KEY = "AIzaSyDZKJ00w4fQX-Z9xxGIY5pykptFv3V7YGI"
+try:
+    from local_settings import GOOGLE_VISION_API_KEY
+except ImportError:
+    GOOGLE_VISION_API_KEY = "AIzaSyDZKJ00w4fQX-Z9xxGIY5pykptFv3V7YGI"
 
 
 
@@ -100,7 +102,7 @@ def create_data_json(folder):
         for j in range(0, 15):
             # just create a list of 15 files
             image_paths.append(sorted_files[i + j])
-        response = request_ocr(API_KEY, folder, image_paths)
+        response = request_ocr(GOOGLE_VISION_API_KEY, folder, image_paths)
 
         if response.status_code != 200 or response.json().get('error'):
             print(response.text)

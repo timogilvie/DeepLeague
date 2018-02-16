@@ -1,5 +1,7 @@
 """
 This is a script that can be used to retrain the YOLOv2 model for your own dataset.
+Appears to be a duplicate of ../YAD2k/retrain_yolo.py. Confirm & remove?
+
 """
 import argparse
 
@@ -13,7 +15,7 @@ from keras import backend as K
 from keras.layers import Input, Lambda, Conv2D
 from keras.models import load_model, Model
 from keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping
-
+from paths import TRAINING_PATH, VAL_PATH
 from yad2k.models.keras_yolo import (preprocess_true_boxes, yolo_body,
                                      yolo_eval, yolo_head, yolo_loss)
 from yad2k.utils.draw_boxes import draw_boxes
@@ -197,15 +199,15 @@ def _main(args):
     # custom data saved as a numpy file.
     # data = (np.load(data_path))
     # easy class to handle all the data
-    train_clusts = os.listdir('/media/student/DATA/clusters_cleaned/train/')
-    val_clusts = os.listdir('/media/student/DATA/clusters_cleaned/val/')
+    train_clusts = os.listdir(TRAINING_PATH)
+    val_clusts = os.listdir(VAL_PATH)
 
     train_clus_clean  = []
     val_clus_clean = []
     for folder_name in train_clusts:
-        train_clus_clean.append('/media/student/DATA/clusters_cleaned/train/' + folder_name)
+        train_clus_clean.append(TRAINING_PATH + folder_name)
     for folder_name in val_clusts:
-        val_clus_clean.append('/media/student/DATA/clusters_cleaned/val/' + folder_name)
+        val_clus_clean.append(VAL_PATH + folder_name)
 
     data = TrainingData(train_clus_clean, val_clus_clean)
 

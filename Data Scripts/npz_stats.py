@@ -1,5 +1,6 @@
 import os
 import numpy as np
+from paths import TRAINING_PATH
 
 def npz_stats(path):
     tot = 0
@@ -9,7 +10,4 @@ def npz_stats(path):
         tot = tot + len(np_obj['images'])
         print(tot)
 
-
-
-
-npz_stats('/Volumes/DATA/clusters_cleaned/train/')
+npz_stats(TRAINING_PATH)
